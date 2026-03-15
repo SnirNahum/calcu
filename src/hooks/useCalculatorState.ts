@@ -43,6 +43,7 @@ function initialState(): CalculatorState {
     memory: null,
     operator: null,
     operandA: null,
+    expression: '',
     shape2D: 'rectangle',
     shape3D: 'box',
     calcDimension: '2d',
@@ -50,16 +51,9 @@ function initialState(): CalculatorState {
 }
 
 function appendToRaw(raw: string, key: string): string {
-  // Handle complete fraction keys like "3/4"
+  // Fraction keys always replace the entire input from position 0
   if (/^\d+\/\d+$/.test(key)) {
-    // After a feet marker "12'" → "12' 3/4"
-    // After empty or just "'" → append directly so parseDimensional handles it as inches fraction
-    if (raw === '') return key
-    if (raw.endsWith("'")) return raw + ' ' + key
-    // After whole inches "12'6" → "12'6 3/4"
-    if (/\d$/.test(raw)) return raw + ' ' + key
-    // After a space, just append
-    return raw + key
+    return key
   }
   return raw + key
 }
@@ -77,6 +71,7 @@ function reducer(state: CalculatorState, action: Action): CalculatorState {
         activeInputIndex: 0,
         operator: null,
         operandA: null,
+        expression: '',
       }
     }
 
@@ -111,9 +106,13 @@ function reducer(state: CalculatorState, action: Action): CalculatorState {
       if (!inp) return state
 
       let newRaw = inp.raw
-      // Remove last character (could be a space before fraction)
-      if (newRaw.endsWith('"')) newRaw = newRaw.slice(0, -1)
-      else if (/ \d+\/\d+$/.test(newRaw)) {
+      // Remove trailing fraction+inch marker atomically e.g. " 3/4\"" or just "\""
+      if (/ \d+\/\d+\"$/.test(newRaw)) {
+        newRaw = newRaw.replace(/ \d+\/\d+"$/, '')
+      } else if (newRaw.endsWith('"')) {
+        // Remove inch marker only if no fraction, go back to bare number
+        newRaw = newRaw.slice(0, -1)
+      } else if (/ \d+\/\d+$/.test(newRaw)) {
         // Remove trailing fraction like " 3/4"
         newRaw = newRaw.replace(/ \d+\/\d+$/, '')
       } else {
@@ -145,6 +144,8 @@ function reducer(state: CalculatorState, action: Action): CalculatorState {
         activeInputIndex: 0,
         operator: null,
         operandA: null,
+        expression: '',
+        memory: null,
       }
     }
 
@@ -172,18 +173,18 @@ function reducer(state: CalculatorState, action: Action): CalculatorState {
       }
 
       const newInputs = state.inputs.map((it) => ({ ...it, raw: '', value: null }))
-      // Only show running total when we actually chained (computed an intermediate result)
-      const didCompute = state.operator !== null && state.operandA !== null && currentVal !== null
-      const runningResults = didCompute && newOperandA !== null
-        ? [{ label: 'Running total', value: newOperandA, unit: 'feet' as const }]
-        : []
+      const currentRaw = state.inputs[0]?.raw ?? ''
+      const newExpression = [state.expression, currentRaw, action.payload]
+        .filter(Boolean)
+        .join(' ')
 
       return {
         ...state,
         operator: action.payload,
         operandA: newOperandA,
         inputs: newInputs,
-        results: runningResults,
+        expression: newExpression,
+        results: [],
         error: null,
       }
     }
@@ -220,7 +221,10 @@ function reducer(state: CalculatorState, action: Action): CalculatorState {
 
     case 'MEMORY_STORE': {
       const inp = state.inputs[state.activeInputIndex]
-      return { ...state, memory: inp?.value ?? state.memory }
+      if (inp?.value === null || inp?.value === undefined) {
+        return { ...state, error: 'No value to store' }
+      }
+      return { ...state, memory: inp.value, error: null }
     }
 
     case 'MEMORY_RECALL': {
@@ -307,6 +311,7 @@ function handleCalculate(state: CalculatorState): CalculatorState {
             results: [{ label: 'Result', value: result, unit: 'feet' }],
             operator: null,
             operandA: null,
+            expression: '',
             error: null,
           }
         }
@@ -346,7 +351,7 @@ function handleCalculate(state: CalculatorState): CalculatorState {
             { label: 'Rise', value: res.rise, unit: 'feet' },
             { label: 'Run', value: res.run, unit: 'feet' },
             { label: 'Diagonal / Rafter', value: res.diagonal, unit: 'feet' },
-            { label: 'Pitch', value: res.pitch * 12, unit: 'none', secondary: res.pitchString },
+            { label: 'Pitch', value: 0, unit: 'none', secondary: res.pitchString },
             { label: 'Angle', value: res.angle, unit: 'degrees' },
           ],
         }
@@ -413,6 +418,7 @@ function handleCalculate(state: CalculatorState): CalculatorState {
             results: [
               { label: 'Volume', value: res.cuFt, unit: 'cubicFeet' },
               { label: 'Cubic Yards', value: res.cuYards, unit: 'cubicFeet', secondary: 'yd³' },
+              { label: 'Cubic Meters', value: res.cuMeters, unit: 'none', secondary: 'm³' },
               { label: 'Gallons', value: res.gallons, unit: 'none', secondary: 'gal' },
             ],
           }
@@ -449,11 +455,10 @@ function handleCalculate(state: CalculatorState): CalculatorState {
       }
 
       case 'trig': {
-        // Already handled by SET_TRIG_FN; = just shows current
         const a = inputs[0].value
         const v = inputs[1].value
         if (a === null && v === null) return { ...state, error: 'Enter an angle or value' }
-        return state
+        return { ...state, error: 'Use sin / cos / tan buttons to calculate' }
       }
 
       case 'cost': {

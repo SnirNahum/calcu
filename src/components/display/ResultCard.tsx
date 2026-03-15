@@ -33,6 +33,7 @@ function formatValue(item: ResultItem, displayUnit: DisplayUnit): string {
   if (unit === 'dollars') return formatDollars(value)
   if (unit === 'count') return formatCount(value)
   if (unit === 'none') {
+    if (secondary && value === 0) return secondary   // pitch-style: only show the label string
     if (secondary) return `${value.toFixed(4)} ${secondary}`
     return value.toFixed(4)
   }

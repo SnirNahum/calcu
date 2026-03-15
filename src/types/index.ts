@@ -39,6 +39,7 @@ export interface CalculatorState {
   memory: DecimalFeet | null
   operator: Operator
   operandA: DecimalFeet | null
+  expression: string
   shape2D: Shape2D
   shape3D: Shape3D
   calcDimension: '2d' | '3d'

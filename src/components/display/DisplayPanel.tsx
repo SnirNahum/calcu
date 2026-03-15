@@ -30,11 +30,8 @@ function buildExpression(state: CalculatorState): string {
   const activeInput = inputs[activeInputIndex]
 
   if (mode === 'dimensional') {
-    const parts: string[] = []
-    if (operandA !== null) parts.push(formatByUnit(operandA, displayUnit))
-    if (operator) parts.push(operator)
-    if (activeInput?.raw) parts.push(activeInput.raw)
-    return parts.join(' ')
+    const raw = activeInput?.raw ?? ''
+    return [state.expression, raw].filter(Boolean).join(' ')
   }
 
   // For multi-input modes, show all filled inputs
@@ -143,8 +140,8 @@ export default function DisplayPanel({ state, dispatch }: Props) {
       {/* Extra results (cards for result 2+) */}
       {results.length > 1 && (
         <div className="px-2 pb-2 flex flex-col gap-1.5 max-h-48 overflow-y-auto scrollbar-none">
-          {results.slice(1).map((item) => (
-            <ResultCard key={item.label} item={item} displayUnit={displayUnit} />
+          {results.slice(1).map((item, i) => (
+            <ResultCard key={`${item.label}-${i}`} item={item} displayUnit={displayUnit} />
           ))}
         </div>
       )}

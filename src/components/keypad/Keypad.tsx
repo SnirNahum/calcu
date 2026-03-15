@@ -15,7 +15,7 @@ export default function Keypad({ dispatch, mode, angleUnit }: Props) {
     <div className="bg-slate-800/50 border-t border-slate-700">
       {mode === 'trig' && <TrigKeypad dispatch={dispatch} angleUnit={angleUnit} />}
       {mode === 'dimensional' && <DimensionKeypad dispatch={dispatch} />}
-      <NumericKeypad dispatch={dispatch} />
+      <NumericKeypad dispatch={dispatch} showOperators={mode !== 'dimensional'} />
     </div>
   )
 }

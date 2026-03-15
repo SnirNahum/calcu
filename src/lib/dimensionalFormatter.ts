@@ -70,10 +70,7 @@ export function formatDecimalFeet(decimalFeet: number, places = 4): string {
 export function formatMetric(decimalFeet: number): string {
   if (!isFinite(decimalFeet)) return 'Error'
   const meters = decimalFeet * 0.3048
-  if (Math.abs(meters) >= 1) {
-    return `${meters.toFixed(3)} m`
-  }
-  return `${(meters * 100).toFixed(1)} cm`
+  return `${meters.toFixed(3)} m`
 }
 
 export function formatDegrees(degrees: number, places = 2): string {
