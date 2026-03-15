@@ -1,4 +1,4 @@
-import { Ruler, Triangle, Square, DollarSign, Activity } from 'lucide-react'
+import { Ruler, Triangle, Square, DollarSign, Activity, AlignJustify } from 'lucide-react'
 import type { CalculatorMode } from '../../types'
 
 interface Props {
@@ -23,6 +23,7 @@ const TABS: { mode: CalculatorMode; label: string; icon: React.ReactNode }[] = [
   { mode: 'stairs', label: 'Stairs', icon: <StairIcon size={15} /> },
   { mode: 'trig', label: 'Trig', icon: <Activity size={15} /> },
   { mode: 'cost', label: 'Cost', icon: <DollarSign size={15} /> },
+  { mode: 'spacing', label: 'Space', icon: <AlignJustify size={15} /> },
 ]
 
 export default function ModeTabs({ mode, onChange }: Props) {

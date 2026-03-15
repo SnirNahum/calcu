@@ -9,6 +9,9 @@ export type CalculatorMode =
   | 'stairs'
   | 'trig'
   | 'cost'
+  | 'spacing'
+
+export type SpacingMeasurement = 'cc' | 'ii' | 'io' | 'oi' | 'oo'
 
 export type AngleUnit = 'degrees' | 'radians'
 
@@ -43,6 +46,7 @@ export interface CalculatorState {
   shape2D: Shape2D
   shape3D: Shape3D
   calcDimension: '2d' | '3d'
+  spacingMeasurement: SpacingMeasurement
 }
 
 export type Shape2D = 'rectangle' | 'circle' | 'triangle'
@@ -66,3 +70,4 @@ export type Action =
   | { type: 'SET_SHAPE_3D'; payload: Shape3D }
   | { type: 'SET_CALC_DIMENSION'; payload: '2d' | '3d' }
   | { type: 'SET_TRIG_FN'; payload: string }
+  | { type: 'SET_SPACING_MEASUREMENT'; payload: SpacingMeasurement }

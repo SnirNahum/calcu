@@ -1,5 +1,5 @@
 import { useReducer } from 'react'
-import type { CalculatorState, Action, CalculatorMode, InputState } from '../types'
+import type { CalculatorState, Action, CalculatorMode, InputState, SpacingMeasurement } from '../types'
 import { parseDimensional } from '../lib/dimensionalParser'
 import { formatFeetInches } from '../lib/dimensionalFormatter'
 import { solveRightAngle } from '../lib/calculators/rightAngle'
@@ -7,6 +7,7 @@ import { calcArea, calcVolume } from '../lib/calculators/areaVolume'
 import { calculateStairs } from '../lib/calculators/stairs'
 import { calcTrig, calcInverseTrig } from '../lib/calculators/trig'
 import { calculateCost } from '../lib/calculators/costEstimator'
+import { calculateSpacing } from '../lib/calculators/spacing'
 
 function makeInput(label: string): InputState {
   return { raw: '', value: null, label, isActive: false }
@@ -28,6 +29,7 @@ const modeInputs: Record<CalculatorMode, InputState[]> = {
   stairs: [makeInput('Total Rise'), makeInput('Desired Riser (opt)')],
   trig: [makeInput('Angle'), makeInput('Value')],
   cost: [makeInput('Quantity'), makeInput('Unit Cost ($)'), makeInput('Waste %')],
+  spacing: [makeInput('Spacing'), makeInput('Stud Thickness'), makeInput('Wall Length (opt)')],
 }
 
 function initialState(): CalculatorState {
@@ -47,6 +49,7 @@ function initialState(): CalculatorState {
     shape2D: 'rectangle',
     shape3D: 'box',
     calcDimension: '2d',
+    spacingMeasurement: 'cc',
   }
 }
 
@@ -243,6 +246,15 @@ function reducer(state: CalculatorState, action: Action): CalculatorState {
 
     case 'SET_TRIG_FN': {
       return handleTrigFn(state, action.payload)
+    }
+
+    case 'SET_SPACING_MEASUREMENT': {
+      return {
+        ...state,
+        spacingMeasurement: action.payload,
+        results: [],
+        error: null,
+      }
     }
 
     case 'CALCULATE': {
@@ -482,6 +494,36 @@ function handleCalculate(state: CalculatorState): CalculatorState {
             { label: 'Total Cost', value: res.totalCost, unit: 'dollars' },
           ],
         }
+      }
+
+      case 'spacing': {
+        const spacingVal = inputs[0].value
+        // Default stud thickness: 1.5" = 0.125 ft; use input if provided
+        const studThickness = inputs[1].value !== null ? inputs[1].value : 0.125
+        const wallLength = inputs[2].value ?? undefined
+
+        if (spacingVal === null || spacingVal <= 0) return { ...state, error: 'Enter spacing value' }
+
+        const res = calculateSpacing({
+          value: spacingVal,
+          type: state.spacingMeasurement,
+          studThickness,
+          wallLength,
+        })
+        if (!res) return { ...state, error: 'Invalid spacing values' }
+
+        const results: import('../types').ResultItem[] = [
+          { label: 'Center-to-Center (OC)', value: res.cc, unit: 'feet' },
+          { label: 'Inside-to-Inside (clear)', value: res.ii, unit: 'feet' },
+          { label: 'Inside-to-Outside', value: res.io, unit: 'feet' },
+          { label: 'Outside-to-Inside', value: res.oi, unit: 'feet' },
+          { label: 'Outside-to-Outside', value: res.oo, unit: 'feet' },
+        ]
+        if (res.studCount !== undefined) {
+          results.push({ label: 'Stud Count', value: res.studCount, unit: 'count' })
+          results.push({ label: 'Total Run', value: res.totalRun!, unit: 'feet' })
+        }
+        return { ...state, error: null, results }
       }
 
       default:

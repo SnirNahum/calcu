@@ -8,6 +8,7 @@ import AreaVolumeMode from './components/modes/AreaVolumeMode'
 import StairsMode from './components/modes/StairsMode'
 import TrigModeInfo from './components/modes/TrigModeInfo'
 import CostMode from './components/modes/CostMode'
+import SpacingMode from './components/modes/SpacingMode'
 import { useCalculatorState } from './hooks/useCalculatorState'
 
 function ModePanel({ state, dispatch }: Parameters<typeof DimensionalMode>[0]) {
@@ -24,6 +25,8 @@ function ModePanel({ state, dispatch }: Parameters<typeof DimensionalMode>[0]) {
       return <TrigModeInfo angleUnit={state.angleUnit} />
     case 'cost':
       return <CostMode />
+    case 'spacing':
+      return <SpacingMode state={state} dispatch={dispatch} />
   }
 }
 
